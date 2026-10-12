@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a73e8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>出差补助计算器</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%231a73e8'/%3E%3Ctext x='96' y='125' text-anchor='middle' font-size='80' fill='white'%3E%F0%9F%92%BC%3C/text%3E%3C/svg%3E">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f0f2f5; min-height: 100vh; color: #333; }
+        .app-header { background: #1a73e8; color: white; padding: 16px 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); position: sticky; top: 0; z-index: 100; }
+        .app-header h1 { font-size: 18px; font-weight: 600; letter-spacing: 1px; }
+        .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .card-title { font-size: 14px; color: #666; margin-bottom: 12px; font-weight: 500; }
+        .main-display { text-align: center; padding: 24px 16px; }
+        .days-count { font-size: 72px; font-weight: 700; color: #1a73e8; line-height: 1; margin-bottom: 8px; }
+        .days-label { font-size: 16px; color: #666; margin-bottom: 20px; }
+        .subsidy-display { background: #e8f0fe; border-radius: 12px; padding: 16px; margin-top: 16px; }
+        .subsidy-amount { font-size: 42px; font-weight: 700; color: #1557b0; }
+        .subsidy-label { font-size: 14px; color: #5f7eb5; margin-top: 4px; }
+        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { font-size: 14px; color: #666; }
+        .info-value { font-size: 15px; font-weight: 600; color: #333; }
+        .info-value.highlight { color: #1a73e8; }
+        .rate-badge { display: inline-block; background: #1a73e8; color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+        .tier-list { margin-top: 12px; }
+        .tier-item { display: flex; align-items: center; padding: 10px 12px; border-radius: 10px; margin-bottom: 8px; font-size: 13px; transition: all 0.3s ease; }
+        .tier-item.active { background: #e8f0fe; border: 2px solid #1a73e8; }
+        .tier-item.inactive { background: #f5f5f5; opacity: 0.7; }
+        .tier-days { width: 90px; font-weight: 600; }
+        .tier-rate { width: 50px; text-align: center; }
+        .tier-amount { flex: 1; text-align: right; font-weight: 600; }
+        .form-group { margin-bottom: 12px; }
+        .form-label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+        .form-input { width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px; font-family: inherit; color: #333; background: white; outline: none; transition: border-color 0.3s; }
+        .form-input:focus { border-color: #1a73e8; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: inherit; }
+        .btn-primary { background: #1a73e8; color: white; }
+        .btn-primary:active { background: #1557b0; transform: scale(0.98); }
+        .btn-secondary { background: #f0f2f5; color: #666; margin-top: 8px; }
+        .btn-secondary:active { background: #e0e0e0; }
+        .milestone-card { background: #fff8e1; border-left: 4px solid #ffa000; }
+        .milestone-text { font-size: 14px; color: #666; line-height: 1.6; }
+        .milestone-highlight { color: #e65100; font-weight: 600; }
+        .install-tip { background: #e8f5e9; border-radius: 12px; padding: 16px; margin-top: 16px; font-size: 13px; color: #2e7d32; line-height: 1.6; }
+        .input-row { display: flex; gap: 12px; }
+        .input-row .form-group { flex: 1; }
+        .saved-badge { display: inline-block; background: #4caf50; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px; opacity: 0; transition: opacity 0.3s; }
+        .saved-badge.show { opacity: 1; }
+        @media (max-width: 360px) { .days-count { font-size: 56px; } .subsidy-amount { font-size: 32px; } .input-row { flex-direction: column; gap: 0; } }
+    </style>
+</head>
+<body>
+    <div class="app-header"><h1>🌍 国外出差补助计算器</h1></div>
+    <div class="container">
+        <div class="card main-display">
+            <div class="card-title">已连续出差</div>
+            <div class="days-count" id="daysCount">0</div>
+            <div class="days-label">天</div>
+            <div class="subsidy-display">
+                <div class="subsidy-label">今日应得补助</div>
+                <div class="subsidy-amount">¥<span id="dailySubsidy">0</span></div>
+                <div class="subsidy-label" style="margin-top:8px">累计应得补助: ¥<span id="totalSubsidy">0</span></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">📋 出差信息</div>
+            <div class="info-row"><span class="info-label">起始日期</span><span class="info-value" id="startDateDisplay">--</span></div>
+            <div class="info-row"><span class="info-label">当前日期</span><span class="info-value" id="currentDateDisplay">--</span></div>
+            <div class="info-row"><span class="info-label">基准单价</span><span class="info-value highlight">¥<span id="baseRateDisplay">370</span>/天</span></div>
+            <div class="info-row"><span class="info-label">当前倍率</span><span class="info-value highlight"><span class="rate-badge" id="rateBadge">1.0x</span></span></div>
+            <div class="info-row"><span class="info-label">当前日单价</span><span class="info-value highlight">¥<span id="dailyRate">370</span></span></div>
+        </div>
+        <div class="card">
+            <div class="card-title">📊 补助分段规则</div>
+            <div class="tier-list" id="tierList"></div>
+            <div style="margin-top:12px; font-size:12px; color:#999; text-align:center">倍率按连续出差天数确定，不含起始当天</div>
+        </div>
+        <div class="card milestone-card" id="milestoneCard" style="display:none">
+            <div class="card-title">🎯 距离下一档</div>
+            <div class="milestone-text" id="milestoneText"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">⚙️ 参数设置 <span class="saved-badge" id="savedBadge">已保存</span></div>
+            <div class="input-row">
+                <div class="form-group"><label class="form-label">出差起始日期</label><input type="date" class="form-input" id="datePicker"></div>
+                <div class="form-group"><label class="form-label">基准单价 (¥/天)</label><input type="number" class="form-input" id="rateInput" placeholder="370" min="0"></div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:4px" onclick="saveSettings()">保存设置</button>
+            <button class="btn btn-secondary" onclick="resetSettings()">恢复默认值</button>
+        </div>
+        <div class="install-tip" id="installTip">💡 <strong>添加到桌面：</strong>点击浏览器菜单 → "添加到主屏幕"，即可像 App 一样使用，支持离线查看。</div>
+    </div>
+    <script>
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').then(reg => console.log('SW registered')).catch(err => console.log('SW error', err)); }
+        const DEFAULT_CONFIG = { startDate: '2026-08-11', baseRate: 370 };
+        const TIERS = [
+            { days: 0, rate: 1.0, label: '1–30天', desc: '基础倍率' },
+            { days: 30, rate: 1.1, label: '31–60天', desc: '超过30天' },
+            { days: 60, rate: 1.2, label: '61–90天', desc: '超过60天' },
+            { days: 90, rate: 1.3, label: '91–180天', desc: '超过90天' },
+            { days: 180, rate: 1.4, label: '181–270天', desc: '超过180天' },
+            { days: 270, rate: 1.5, label: '271天+', desc: '超过270天' },
+        ];
+        function isValidDate(dateStr) { if (!dateStr || typeof dateStr !== 'string') return false; const regex = /^\d{4}-\d{2}-\d{2}$/; if (!regex.test(dateStr)) return false; const d = new Date(dateStr); return d instanceof Date && !isNaN(d.getTime()); }
+        function normalizeDate(dateStr) { if (!dateStr) return null; const d = new Date(dateStr); if (isNaN(d.getTime())) return null; const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; }
+        function loadConfig() { try { const saved = localStorage.getItem('subsidyConfig'); console.log('loadConfig - saved:', saved); if (saved) { const parsed = JSON.parse(saved); console.log('loadConfig - parsed:', parsed); let startDate = parsed.startDate; if (!isValidDate(startDate)) { console.warn('Invalid saved date, using default:', startDate); startDate = DEFAULT_CONFIG.startDate; } else { startDate = normalizeDate(startDate) || DEFAULT_CONFIG.startDate; } let baseRate = parseFloat(parsed.baseRate); if (isNaN(baseRate) || baseRate < 0) { console.warn('Invalid saved rate, using default:', parsed.baseRate); baseRate = DEFAULT_CONFIG.baseRate; } const result = { startDate, baseRate }; console.log('loadConfig - result:', result); return result; } } catch (e) { console.error('loadConfig error:', e); } console.log('loadConfig - using defaults'); return { ...DEFAULT_CONFIG }; }
+        function saveConfig(config) { try { const toSave = { startDate: config.startDate, baseRate: config.baseRate, savedAt: new Date().toISOString() }; localStorage.setItem('subsidyConfig', JSON.stringify(toSave)); console.log('saveConfig - saved:', toSave); } catch (e) { console.error('saveConfig error:', e); } }
+        let config = loadConfig(); let startDate = new Date(config.startDate); let baseRate = config.baseRate;
+        function initInputs() { const datePicker = document.getElementById('datePicker'); const rateInput = document.getElementById('rateInput'); if (datePicker) datePicker.value = config.startDate; if (rateInput) rateInput.value = config.baseRate; }
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initInputs); } else { initInputs(); }
+        function getRateInfo(days) { for (let i = TIERS.length - 1; i >= 0; i--) { if (days > TIERS[i].days) { return TIERS[i]; } } return TIERS[0]; }
+        function getNextTier(days) { for (let tier of TIERS) { if (days <= tier.days) { return tier; } } return null; }
+        function calculate() { const now = new Date(); now.setHours(0, 0, 0, 0); const start = new Date(startDate); start.setHours(0, 0, 0, 0); const diffTime = now.getTime() - start.getTime(); const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24))); const currentTier = getRateInfo(diffDays); const dailyRate = Math.round(baseRate * currentTier.rate); const totalSubsidy = diffDays * dailyRate; document.getElementById('daysCount').textContent = diffDays; document.getElementById('dailySubsidy').textContent = dailyRate.toLocaleString(); document.getElementById('totalSubsidy').textContent = totalSubsidy.toLocaleString(); document.getElementById('rateBadge').textContent = currentTier.rate.toFixed(1) + 'x'; document.getElementById('dailyRate').textContent = dailyRate.toLocaleString(); document.getElementById('baseRateDisplay').textContent = baseRate; document.getElementById('currentDateDisplay').textContent = now.toLocaleDateString('zh-CN'); document.getElementById('startDateDisplay').textContent = start.toLocaleDateString('zh-CN'); updateTierList(diffDays); updateMilestone(diffDays); }
+        function updateTierList(currentDays) { const list = document.getElementById('tierList'); const currentTier = getRateInfo(currentDays); list.innerHTML = TIERS.map(tier => { const isActive = tier.rate === currentTier.rate; const amount = Math.round(baseRate * tier.rate); return `<div class="tier-item ${isActive ? 'active' : 'inactive'}"><span class="tier-days">${tier.label}</span><span class="rate-badge tier-rate">${tier.rate}x</span><span class="tier-amount">¥${amount.toLocaleString()}/天</span></div>`; }).join(''); }
+        function updateMilestone(days) { const card = document.getElementById('milestoneCard'); const text = document.getElementById('milestoneText'); let nextTier = null; for (let tier of TIERS) { if (days <= tier.days) { nextTier = tier; break; } } if (!nextTier) { card.style.display = 'none'; return; } const remaining = nextTier.days - days + 1; const nextAmount = Math.round(baseRate * nextTier.rate); if (remaining > 0) { card.style.display = 'block'; text.innerHTML = `还差 <span class="milestone-highlight">${remaining}</span> 天达到 <span class="milestone-highlight">${nextTier.label}</span>，日补助将升至 <span class="milestone-highlight">¥${nextAmount.toLocaleString()}</span>`; } else { card.style.display = 'none'; } }
+        function saveSettings() { const datePicker = document.getElementById('datePicker'); const rateInput = document.getElementById('rateInput'); const badge = document.getElementById('savedBadge'); const newDate = datePicker.value; const newRate = parseFloat(rateInput.value); console.log('saveSettings - input date:', newDate, 'input rate:', newRate); if (newDate && isValidDate(newDate)) { startDate = new Date(newDate); config.startDate = normalizeDate(newDate) || newDate; } else { console.warn('Invalid date input, keeping current:', newDate); } if (!isNaN(newRate) && newRate >= 0) { baseRate = newRate; config.baseRate = newRate; } else { console.warn('Invalid rate input, keeping current:', newRate); } saveConfig(config); calculate(); badge.classList.add('show'); setTimeout(() => badge.classList.remove('show'), 2000); }
+        function resetSettings() { config = { ...DEFAULT_CONFIG }; startDate = new Date(config.startDate); baseRate = config.baseRate; document.getElementById('datePicker').value = config.startDate; document.getElementById('rateInput').value = config.baseRate; saveConfig(config); calculate(); }
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) { document.getElementById('installTip').style.display = 'none'; }
+        calculate(); setInterval(calculate, 60000);
+    </script>
+</body>
+</html>
